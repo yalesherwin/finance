@@ -36,7 +36,8 @@
   </div>
 
   <div id="app" style="display:none">
-    <!-- existing app content -->
+    <h1>Welcome to the CNU Tracker</h1>
+    <p>This is where your app content will go after login.</p>
   </div>
 
   <script>
@@ -59,7 +60,8 @@
       if (user) {
         app.style.display = "block";
         authStatus.innerText = `Logged in as ${user.email}`;
-        loadOrders();
+        // Ensure this function exists or remove it
+        // loadOrders();
       } else {
         app.style.display = "none";
         authStatus.innerText = "Not logged in.";
@@ -87,3 +89,4 @@
   </script>
 </body>
 </html>
+
