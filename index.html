@@ -36,8 +36,41 @@
   </div>
 
   <div id="app" style="display:none">
-    <h1>Welcome to the CNU Tracker</h1>
-    <p>This is where your app content will go after login.</p>
+    <h1>CNU Order Tracker</h1>
+    <table id="order-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Client</th>
+          <th>Product</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="order-body"></tbody>
+    </table>
+
+    <div class="form">
+      <h2>Add New Order</h2>
+      <input type="text" id="orderId" placeholder="Order ID"><br>
+      <input type="text" id="client" placeholder="Client Name"><br>
+      <input type="text" id="country" placeholder="Country Code (e.g. US)"><br>
+      <input type="text" id="product" placeholder="Product"><br>
+      <input type="number" id="total" placeholder="Total Amount"><br>
+      <input type="number" id="deposit" placeholder="Deposit Amount"><br>
+      <input type="date" id="payDate">
+      <input type="text" id="method" placeholder="Payment Method">
+      <input type="text" id="ref" placeholder="Transaction Ref">
+      <button onclick="addOrder()">Save Order</button>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="paymentChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="orderChart"></canvas>
+    </div>
   </div>
 
   <script>
@@ -60,33 +93,113 @@
       if (user) {
         app.style.display = "block";
         authStatus.innerText = `Logged in as ${user.email}`;
-        // Ensure this function exists or remove it
-        // loadOrders();
+        loadOrders();
       } else {
         app.style.display = "none";
         authStatus.innerText = "Not logged in.";
       }
     });
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .catch(err => alert("Login error: " + err.message));
+    async function loadOrders() {
+      const snapshot = await db.collection("orders").get();
+      const tbody = document.getElementById("order-body");
+      tbody.innerHTML = "";
+      const paymentStats = {}, statusStats = { Completed: 0, Pending: 0 };
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const paid = data.payments.reduce((sum, p) => {
+          paymentStats[p.method] = (paymentStats[p.method] || 0) + p.amount;
+          return sum + p.amount;
+        }, 0);
+        const status = paid >= data.totalAmount ? 'Completed' : 'Pending';
+        statusStats[status]++;
+        const row = `<tr>
+          <td>${data.id}</td>
+          <td>${data.client} (${data.country})</td>
+          <td>${data.product}</td>
+          <td>$${data.totalAmount}</td>
+          <td class="${status === 'Completed' ? 'status-completed' : 'status-pending'}">${status}</td>
+          <td><button onclick=\"addPayment('${doc.id}')\">Add Payment</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+
+      renderCharts(paymentStats, statusStats);
     }
 
-    function register() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => alert("Registration successful. You are now logged in."))
-        .catch(err => alert("Registration error: " + err.message));
+    async function addOrder() {
+      const order = {
+        id: document.getElementById("orderId").value,
+        client: document.getElementById("client").value,
+        country: document.getElementById("country").value,
+        product: document.getElementById("product").value,
+        totalAmount: parseFloat(document.getElementById("total").value),
+        deposit: parseFloat(document.getElementById("deposit").value),
+        payments: [{
+          amount: parseFloat(document.getElementById("deposit").value),
+          date: document.getElementById("payDate").value,
+          method: document.getElementById("method").value,
+          ref: document.getElementById("ref").value,
+          status: "Completed"
+        }],
+        notes: "",
+        status: "Pending"
+      };
+      order.status = order.payments[0].amount >= order.totalAmount ? "Completed" : "Pending";
+      await db.collection("orders").add(order);
+      alert("Order saved to cloud ✅");
+      loadOrders();
     }
 
-    function logout() {
-      auth.signOut();
+    async function addPayment(docId) {
+      const docRef = db.collection("orders").doc(docId);
+      const docSnap = await docRef.get();
+      if (!docSnap.exists) return;
+
+      const order = docSnap.data();
+      const amount = parseFloat(prompt("Enter payment amount:"));
+      const date = prompt("Enter payment date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+      const method = prompt("Enter payment method:", "Bank Transfer");
+      const ref = prompt("Enter transaction reference:", `TRX-${order.id}-${order.payments.length + 1}`);
+
+      const newPayment = { amount, date, method, ref, status: "Completed" };
+      order.payments.push(newPayment);
+      const paid = order.payments.reduce((sum, p) => sum + p.amount, 0);
+      order.status = paid >= order.totalAmount ? "Completed" : "Pending";
+
+      await docRef.set(order);
+      loadOrders();
+    }
+
+    function renderCharts(paymentData, orderStatusData) {
+      const ctx1 = document.getElementById("paymentChart").getContext("2d");
+      new Chart(ctx1, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(paymentData),
+          datasets: [{
+            data: Object.values(paymentData),
+            backgroundColor: ['#3498db','#2ecc71','#f1c40f','#e74c3c','#9b59b6','#34495e']
+          }]
+        },
+        options: { responsive: true, plugins: { title: { display: true, text: 'Payments by Method' } } }
+      });
+
+      const ctx2 = document.getElementById("orderChart").getContext("2d");
+      new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(orderStatusData),
+          datasets: [{ label: 'Orders', data: Object.values(orderStatusData), backgroundColor: ['#27ae60','#f39c12'] }]
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: 'Orders by Status' } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
     }
   </script>
 </body>
 </html>
-
