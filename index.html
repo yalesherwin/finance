@@ -2,75 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CNU Tracker - Firebase</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>CNU Order Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    h1, h2 { text-align: center; color: #2c3e50; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    th { background-color: #eee; }
-    .status-completed { color: green; font-weight: bold; }
-    .status-pending { color: orange; font-weight: bold; }
-    .form { margin-top: 30px; background: #fff; padding: 20px; border-radius: 10px; }
-    input, select { width: 300px; padding: 8px; margin: 5px 0; }
-    button { background: #3498db; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #2980b9; }
-    .chart-container { max-width: 800px; margin: 40px auto; }
-    #auth-section { text-align: center; margin-bottom: 30px; }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    input, button { margin: 5px; padding: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; }
+    th { background: #f0f0f0; }
+    #app { display: none; }
   </style>
 </head>
 <body>
-  <div id="auth-section">
-    <h2>Login or Register</h2>
+
+  <div>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="password" placeholder="Password">
     <button onclick="login()">Login</button>
     <button onclick="register()">Register</button>
     <button onclick="logout()">Logout</button>
-    <p id="auth-status"></p>
+    <p id="auth-status">Not logged in.</p>
   </div>
 
-  <div id="app" style="display:none">
-    <h1>CNU Order Tracker</h1>
-    <table id="order-table">
+  <div id="app">
+    <h2>CNU Order Tracker</h2>
+    <table>
       <thead>
         <tr>
-          <th>Order ID</th>
-          <th>Client</th>
-          <th>Product</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Actions</th>
+          <th>Order ID</th><th>Client</th><th>Product</th><th>Total</th><th>Status</th><th>Actions</th>
         </tr>
       </thead>
       <tbody id="order-body"></tbody>
     </table>
 
-    <div class="form">
-      <h2>Add New Order</h2>
-      <input type="text" id="orderId" placeholder="Order ID"><br>
-      <input type="text" id="client" placeholder="Client Name"><br>
-      <input type="text" id="country" placeholder="Country Code (e.g. US)"><br>
-      <input type="text" id="product" placeholder="Product"><br>
-      <input type="number" id="total" placeholder="Total Amount"><br>
-      <input type="number" id="deposit" placeholder="Deposit Amount"><br>
-      <input type="date" id="payDate">
-      <input type="text" id="method" placeholder="Payment Method">
-      <input type="text" id="ref" placeholder="Transaction Ref">
-      <button onclick="addOrder()">Save Order</button>
-    </div>
-
-    <div class="chart-container">
-      <canvas id="paymentChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="orderChart"></canvas>
-    </div>
+    <h3>Add New Order</h3>
+    <input id="orderId" placeholder="Order ID">
+    <input id="client" placeholder="Client">
+    <input id="country" placeholder="Country">
+    <input id="product" placeholder="Product">
+    <input id="total" placeholder="Total">
+    <input id="deposit" placeholder="Deposit">
+    <input type="date" id="payDate">
+    <input id="method" placeholder="Payment Method">
+    <input id="ref" placeholder="Reference">
+    <button onclick="addOrder()">Save Order</button>
   </div>
 
   <script>
@@ -88,44 +65,48 @@
     const auth = firebase.auth();
 
     auth.onAuthStateChanged(user => {
+      console.log("onAuthStateChanged triggered", user);
       const app = document.getElementById("app");
       const authStatus = document.getElementById("auth-status");
       if (user) {
+        console.log("User logged in:", user.email);
         app.style.display = "block";
         authStatus.innerText = `Logged in as ${user.email}`;
         loadOrders();
       } else {
+        console.log("User not logged in.");
         app.style.display = "none";
         authStatus.innerText = "Not logged in.";
       }
     });
 
-    async function loadOrders() {
-      const snapshot = await db.collection("orders").get();
-      const tbody = document.getElementById("order-body");
-      tbody.innerHTML = "";
-      const paymentStats = {}, statusStats = { Completed: 0, Pending: 0 };
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        console.log("Login success");
+      } catch (err) {
+        alert("Login error: " + err.message);
+        console.error("Login error", err);
+      }
+    }
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const paid = data.payments.reduce((sum, p) => {
-          paymentStats[p.method] = (paymentStats[p.method] || 0) + p.amount;
-          return sum + p.amount;
-        }, 0);
-        const status = paid >= data.totalAmount ? 'Completed' : 'Pending';
-        statusStats[status]++;
-        const row = `<tr>
-          <td>${data.id}</td>
-          <td>${data.client} (${data.country})</td>
-          <td>${data.product}</td>
-          <td>$${data.totalAmount}</td>
-          <td class="${status === 'Completed' ? 'status-completed' : 'status-pending'}">${status}</td>
-          <td><button onclick=\"addPayment('${doc.id}')\">Add Payment</button></td>
-        </tr>`;
-        tbody.innerHTML += row;
-      });
+    async function register() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        alert("Registration successful ✅");
+      } catch (err) {
+        alert("Registration error: " + err.message);
+        console.error("Registration error", err);
+      }
+    }
 
-      renderCharts(paymentStats, statusStats);
+    function logout() {
+      auth.signOut();
+      console.log("User logged out");
     }
 
     async function addOrder() {
@@ -146,60 +127,41 @@
         notes: "",
         status: "Pending"
       };
+
       order.status = order.payments[0].amount >= order.totalAmount ? "Completed" : "Pending";
-      await db.collection("orders").add(order);
-      alert("Order saved to cloud ✅");
-      loadOrders();
+
+      try {
+        await db.collection("orders").add(order);
+        alert("✅ Order saved successfully");
+        loadOrders();
+      } catch (err) {
+        alert("❌ Failed to save order: " + err.message);
+        console.error("Save Order Error", err);
+      }
     }
 
-    async function addPayment(docId) {
-      const docRef = db.collection("orders").doc(docId);
-      const docSnap = await docRef.get();
-      if (!docSnap.exists) return;
-
-      const order = docSnap.data();
-      const amount = parseFloat(prompt("Enter payment amount:"));
-      const date = prompt("Enter payment date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-      const method = prompt("Enter payment method:", "Bank Transfer");
-      const ref = prompt("Enter transaction reference:", `TRX-${order.id}-${order.payments.length + 1}`);
-
-      const newPayment = { amount, date, method, ref, status: "Completed" };
-      order.payments.push(newPayment);
-      const paid = order.payments.reduce((sum, p) => sum + p.amount, 0);
-      order.status = paid >= order.totalAmount ? "Completed" : "Pending";
-
-      await docRef.set(order);
-      loadOrders();
-    }
-
-    function renderCharts(paymentData, orderStatusData) {
-      const ctx1 = document.getElementById("paymentChart").getContext("2d");
-      new Chart(ctx1, {
-        type: 'pie',
-        data: {
-          labels: Object.keys(paymentData),
-          datasets: [{
-            data: Object.values(paymentData),
-            backgroundColor: ['#3498db','#2ecc71','#f1c40f','#e74c3c','#9b59b6','#34495e']
-          }]
-        },
-        options: { responsive: true, plugins: { title: { display: true, text: 'Payments by Method' } } }
-      });
-
-      const ctx2 = document.getElementById("orderChart").getContext("2d");
-      new Chart(ctx2, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(orderStatusData),
-          datasets: [{ label: 'Orders', data: Object.values(orderStatusData), backgroundColor: ['#27ae60','#f39c12'] }]
-        },
-        options: {
-          responsive: true,
-          plugins: { title: { display: true, text: 'Orders by Status' } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
+    async function loadOrders() {
+      try {
+        const snapshot = await db.collection("orders").get();
+        const tbody = document.getElementById("order-body");
+        tbody.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const row = `<tr>
+            <td>${data.id}</td>
+            <td>${data.client}</td>
+            <td>${data.product}</td>
+            <td>$${data.totalAmount}</td>
+            <td>${data.status}</td>
+            <td><button onclick="alert('Not implemented')">Add Payment</button></td>
+          </tr>`;
+          tbody.innerHTML += row;
+        });
+      } catch (err) {
+        console.error("Failed to load orders:", err);
+      }
     }
   </script>
+
 </body>
 </html>
