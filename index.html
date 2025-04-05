@@ -160,6 +160,8 @@
         status: "Pending"
       };
 
+      console.log("Order Data:", order); // Debug: check if the data is being captured correctly
+
       if (!order.id || !order.client || !order.product || isNaN(order.totalAmount)) {
         alert("❌ Please fill in required fields.");
         return;
@@ -168,9 +170,10 @@
       order.status = order.payments[0].amount >= order.totalAmount ? "Completed" : "Pending";
 
       try {
+        console.log("Saving order to Firestore..."); // Debug: ensuring save action is triggered
         await db.collection("orders").add(order);
         alert("✅ Order saved successfully");
-        loadOrders();
+        loadOrders(); // Refresh the list of orders after adding
       } catch (err) {
         alert("❌ Failed to save order: " + err.message);
         console.error("Save Order Error", err);
@@ -199,7 +202,7 @@
       }
     }
 
-    loadOrders();
+    loadOrders(); // Initial load of orders
   </script>
 </body>
 </html>
