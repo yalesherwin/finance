@@ -1,0 +1,625 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>International Client Payment Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            color: #3498db;
+        }
+        .tab-content {
+            display: none;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .status-pending {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-completed {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>International Client Payment Tracker</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'orders')">Orders</div>
+            <div class="tab" onclick="openTab(event, 'payments')">Payments</div>
+            <div class="tab" onclick="openTab(event, 'reports')">Reports</div>
+            <div class="tab" onclick="openTab(event, 'new-entry')">Add New</div>
+        </div>
+        
+        <div id="orders" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="order-search" placeholder="Search orders..." onkeyup="searchOrders()">
+            </div>
+            <table id="order-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Client Name</th>
+                        <th>Product</th>
+                        <th>Total Amount</th>
+                        <th>Deposit</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="order-data">
+                    <!-- Order data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="payments" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="payment-search" placeholder="Search payments..." onkeyup="searchPayments()">
+            </div>
+            <table id="payment-table">
+                <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Order ID</th>
+                        <th>Client</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Transaction Ref</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="payment-data">
+                    <!-- Payment data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="reports" class="tab-content">
+            <div class="chart-container">
+                <canvas id="paymentChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="orderChart"></canvas>
+            </div>
+        </div>
+        
+        <div id="new-entry" class="tab-content">
+            <div class="form-group">
+                <label for="order-id">Order ID:</label>
+                <input type="text" id="order-id" placeholder="ORD-1234">
+            </div>
+            <div class="form-group">
+                <label for="client-name">Client Name:</label>
+                <input type="text" id="client-name">
+            </div>
+            <div class="form-group">
+                <label for="client-country">Client Country:</label>
+                <select id="client-country">
+                    <option value="">Select Country</option>
+                    <option value="US">United States</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="CA">Canada</option>
+                    <option value="AU">Australia</option>
+                    <option value="JP">Japan</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="product">Product:</label>
+                <input type="text" id="product">
+            </div>
+            <div class="form-group">
+                <label for="total-amount">Total Amount (USD):</label>
+                <input type="number" id="total-amount" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="deposit-amount">Deposit Amount (USD):</label>
+                <input type="number" id="deposit-amount" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="payment-date">Payment Date:</label>
+                <input type="date" id="payment-date">
+            </div>
+            <div class="form-group">
+                <label for="payment-method">Payment Method:</label>
+                <select id="payment-method">
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="PayPal">PayPal</option>
+                    <option value="Wise">Wise</option>
+                    <option value="Stripe">Stripe</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="transaction-ref">Transaction Reference:</label>
+                <input type="text" id="transaction-ref">
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" rows="3"></textarea>
+            </div>
+            <button onclick="saveOrder()">Save Order</button>
+            <button onclick="clearForm()">Clear Form</button>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        let orders = [
+            {
+                id: "ORD-1001",
+                client: "Tech Solutions Inc.",
+                country: "US",
+                product: "AI Software Suite",
+                totalAmount: 5000,
+                deposit: 1500,
+                payments: [
+                    { amount: 1500, date: "2023-05-15", method: "Bank Transfer", ref: "TRX-1001-1", status: "Completed" },
+                    { amount: 3500, date: "2023-06-20", method: "Bank Transfer", ref: "TRX-1001-2", status: "Completed" }
+                ],
+                status: "Completed",
+                notes: "Sent final invoice on June 10th."
+            },
+            {
+                id: "ORD-1002",
+                client: "Global Imports Ltd.",
+                country: "UK",
+                product: "Custom CRM System",
+                totalAmount: 7500,
+                deposit: 2500,
+                payments: [
+                    { amount: 2500, date: "2023-06-01", method: "PayPal", ref: "TRX-1002-1", status: "Completed" }
+                ],
+                status: "Pending",
+                notes: "Expecting final payment by July 15th."
+            },
+            {
+                id: "ORD-1003",
+                client: "Berlin Designs GmbH",
+                country: "DE",
+                product: "E-commerce Website",
+                totalAmount: 12000,
+                deposit: 5000,
+                payments: [
+                    { amount: 5000, date: "2023-05-10", method: "Wise", ref: "TRX-1003-1", status: "Completed" }
+                ],
+                status: "Pending",
+                notes: "Testing phase complete, awaiting client approval."
+            }
+        ];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderOrders();
+            renderPayments();
+            renderCharts();
+        });
+
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].className = tabcontent[i].className.replace(" active", "");
+            }
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).className += " active";
+            evt.currentTarget.className += " active";
+        }
+
+        function renderOrders() {
+            const tbody = document.getElementById('order-data');
+            tbody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const paidAmount = order.payments.reduce((sum, payment) => sum + payment.amount, 0);
+                const remainingBalance = order.totalAmount - paidAmount;
+                const statusClass = order.status === 'Completed' ? 'status-completed' : 'status-pending';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.client} (${order.country})</td>
+                    <td>${order.product}</td>
+                    <td>$${order.totalAmount.toFixed(2)}</td>
+                    <td>$${order.deposit.toFixed(2)}</td>
+                    <td>$${remainingBalance.toFixed(2)}</td>
+                    <td class="${statusClass}">${order.status}</td>
+                    <td>
+                        <button onclick="viewOrderDetails('${order.id}')">View</button>
+                        <button onclick="addPayment('${order.id}')">Add Payment</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPayments() {
+            const tbody = document.getElementById('payment-data');
+            tbody.innerHTML = '';
+            
+            orders.forEach(order => {
+                order.payments.forEach(payment => {
+                    const row = document.createElement('tr');
+                    const statusClass = payment.status === 'Completed' ? 'status-completed' : 'status-pending';
+                    
+                    row.innerHTML = `
+                        <td>${payment.ref}</td>
+                        <td>${order.id}</td>
+                        <td>${order.client}</td>
+                        <td>$${payment.amount.toFixed(2)}</td>
+                        <td>${payment.date}</td>
+                        <td>${payment.method}</td>
+                        <td>${payment.ref}</td>
+                        <td class="${statusClass}">${payment.status}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function searchOrders() {
+            const input = document.getElementById('order-search').value.toLowerCase();
+            const rows = document.getElementById('order-data').getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    if (cell.textContent.toLowerCase().indexOf(input) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? "" : "none";
+            }
+        }
+
+        function searchPayments() {
+            const input = document.getElementById('payment-search').value.toLowerCase();
+            const rows = document.getElementById('payment-data').getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    if (cell.textContent.toLowerCase().indexOf(input) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? "" : "none";
+            }
+        }
+
+        function saveOrder() {
+            const orderId = document.getElementById('order-id').value;
+            const clientName = document.getElementById('client-name').value;
+            const clientCountry = document.getElementById('client-country').value;
+            const product = document.getElementById('product').value;
+            const totalAmount = parseFloat(document.getElementById('total-amount').value);
+            const depositAmount = parseFloat(document.getElementById('deposit-amount').value);
+            const paymentDate = document.getElementById('payment-date').value;
+            const paymentMethod = document.getElementById('payment-method').value;
+            const transactionRef = document.getElementById('transaction-ref').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!orderId || !clientName || !clientCountry || !product || isNaN(totalAmount) || isNaN(depositAmount)) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+            
+            const newOrder = {
+                id: orderId,
+                client: clientName,
+                country: clientCountry,
+                product: product,
+                totalAmount: totalAmount,
+                deposit: depositAmount,
+                payments: [{
+                    amount: depositAmount,
+                    date: paymentDate,
+                    method: paymentMethod,
+                    ref: transactionRef,
+                    status: "Completed"
+                }],
+                status: totalAmount === depositAmount ? "Completed" : "Pending",
+                notes: notes
+            };
+            
+            orders.push(newOrder);
+            renderOrders();
+            renderPayments();
+            renderCharts();
+            clearForm();
+            openTab({currentTarget: document.querySelector('.tab')}, 'orders');
+        }
+
+        function addPayment(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const amount = prompt(`Enter payment amount for order ${orderId}:`);
+            if (!amount || isNaN(amount)) return;
+            
+            const date = prompt("Enter payment date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+            if (!date) return;
+            
+            const method = prompt("Enter payment method (Bank Transfer, PayPal, etc.):", "Bank Transfer");
+            if (!method) return;
+            
+            const ref = prompt("Enter transaction reference:", `TRX-${orderId}-${order.payments.length + 1}`);
+            if (!ref) return;
+            
+            const payment = {
+                amount: parseFloat(amount),
+                date: date,
+                method: method,
+                ref: ref,
+                status: "Completed"
+            };
+            
+            order.payments.push(payment);
+            
+            const paidAmount = order.payments.reduce((sum, p) => sum + p.amount, 0);
+            order.status = paidAmount >= order.totalAmount ? "Completed" : "Pending";
+            
+            renderOrders();
+            renderPayments();
+            renderCharts();
+            openTab({currentTarget: document.querySelector('.tab:nth-child(2)')}, 'payments');
+        }
+
+        function viewOrderDetails(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const paidAmount = order.payments.reduce((sum, p) => sum + p.amount, 0);
+            const statusClass = order.status === 'Completed' ? 'status-completed' : 'status-pending';
+            
+            let html = `
+                <h2>${order.id} - ${order.client}</h2>
+                <p><strong>Product:</strong> ${order.product}</p>
+                <p><strong>Total Amount:</strong> $${order.totalAmount.toFixed(2)}</p>
+                <p><strong>Paid Amount:</strong> $${paidAmount.toFixed(2)}</p>
+                <p><strong>Balance:</strong> $${(order.totalAmount - paidAmount).toFixed(2)}</p>
+                <p><strong>Status:</strong> <span class="${statusClass}">${order.status}</span></p>
+                <h3>Payment History</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            order.payments.forEach(p => {
+                const pStatusClass = p.status === 'Completed' ? 'status-completed' : 'status-pending';
+                html += `
+                    <tr>
+                        <td>${p.date}</td>
+                        <td>$${p.amount.toFixed(2)}</td>
+                        <td>${p.method}</td>
+                        <td>${p.ref}</td>
+                        <td class="${pStatusClass}">${p.status}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p><strong>Notes:</strong> ${order.notes || 'None'}</p>
+                <button onclick="window.print()">Print Report</button>
+                <button onclick="openTab({currentTarget: document.querySelector('.tab:nth-child(1)')}, 'orders')">Back to Orders</button>
+            `;
+            
+            const ordersTab = document.getElementById('orders');
+            ordersTab.innerHTML = html;
+        }
+
+        function clearForm() {
+            document.getElementById('order-id').value = '';
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-country').value = '';
+            document.getElementById('product').value = '';
+            document.getElementById('total-amount').value = '';
+            document.getElementById('deposit-amount').value = '';
+            document.getElementById('payment-date').value = '';
+            document.getElementById('payment-method').value = 'Bank Transfer';
+            document.getElementById('transaction-ref').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        function renderCharts() {
+            // Payment chart by method
+            const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+            const paymentMethods = {};
+            
+            orders.forEach(order => {
+                order.payments.forEach(payment => {
+                    paymentMethods[payment.method] = (paymentMethods[payment.method] || 0) + payment.amount;
+                });
+            });
+            
+            new Chart(paymentCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(paymentMethods),
+                    datasets: [{
+                        data: Object.values(paymentMethods),
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#f1c40f',
+                            '#e74c3c',
+                            '#9b59b6',
+                            '#1abc9c',
+                            '#34495e'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Payments by Method (USD)'
+                        }
+                    }
+                }
+            });
+            
+            // Order chart by status
+            const orderCtx = document.getElementById('orderChart').getContext('2d');
+            const orderStatuses = {
+                'Completed': 0,
+                'Pending': 0
+            };
+            
+            orders.forEach(order => {
+                orderStatuses[order.status]++;
+            });
+            
+            new Chart(orderCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(orderStatuses),
+                    datasets: [{
+                        label: 'Number of Orders',
+                        data: Object.values(orderStatuses),
+                        backgroundColor: [
+                            '#27ae60',
+                            '#f39c12'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Orders by Status'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
