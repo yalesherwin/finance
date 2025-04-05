@@ -2,52 +2,130 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CNU Order Tracker</title>
+  <title>CHINACNU STEEL - Financial Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
-    input, button { margin: 5px; padding: 8px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; }
-    th { background: #f0f0f0; }
-    #app { display: none; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #e6ecf0, #fdfdfd);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 30px;
+    }
+    .branding {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .branding img {
+      height: 40px;
+      margin-right: 15px;
+    }
+    .branding h2 {
+      font-size: 24px;
+      color: #2c3e50;
+      letter-spacing: 1px;
+      margin: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f3f6fa;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    input, select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .section-title {
+      margin-top: 40px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 5px;
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="branding">
+      <img src="https://chinacnu.com/logo.png" alt="CHINACNU STEEL Logo">
+      <h2>CHINACNU STEEL</h2>
+    </div>
 
-  <div>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="register()">Register</button>
-    <button onclick="logout()">Logout</button>
-    <p id="auth-status">Not logged in.</p>
-  </div>
-
-  <div id="app">
-    <h2>CNU Order Tracker</h2>
+    <div class="section-title">Order List</div>
     <table>
       <thead>
         <tr>
-          <th>Order ID</th><th>Client</th><th>Product</th><th>Total</th><th>Status</th><th>Actions</th>
+          <th>Order ID</th>
+          <th>Client</th>
+          <th>Product</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="order-body"></tbody>
     </table>
 
-    <h3>Add New Order</h3>
-    <input id="orderId" placeholder="Order ID">
-    <input id="client" placeholder="Client">
-    <input id="country" placeholder="Country">
-    <input id="product" placeholder="Product">
-    <input id="total" placeholder="Total">
-    <input id="deposit" placeholder="Deposit">
-    <input type="date" id="payDate">
-    <input id="method" placeholder="Payment Method">
-    <input id="ref" placeholder="Reference">
-    <button onclick="addOrder()">Save Order</button>
+    <div class="section-title">Add New Order</div>
+    <div class="form-grid">
+      <input id="orderId" placeholder="Order ID">
+      <input id="client" placeholder="Client Name">
+      <input id="country" placeholder="Country">
+      <input id="product" placeholder="Product">
+      <input id="total" placeholder="Total Amount">
+      <input id="deposit" placeholder="Deposit Amount">
+      <input type="date" id="payDate">
+      <input id="method" placeholder="Payment Method">
+      <input id="ref" placeholder="Transaction Reference">
+    </div>
+    <div style="margin-top: 20px; text-align: center;">
+      <button onclick="addOrder()">💾 Save Order</button>
+    </div>
   </div>
 
   <script>
@@ -62,71 +140,30 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    auth.onAuthStateChanged(user => {
-      console.log("onAuthStateChanged triggered", user);
-      const app = document.getElementById("app");
-      const authStatus = document.getElementById("auth-status");
-      if (user) {
-        console.log("User logged in:", user.email);
-        app.style.display = "block";
-        authStatus.innerText = `Logged in as ${user.email}`;
-        loadOrders();
-      } else {
-        console.log("User not logged in.");
-        app.style.display = "none";
-        authStatus.innerText = "Not logged in.";
-      }
-    });
-
-    async function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-        console.log("Login success");
-      } catch (err) {
-        alert("Login error: " + err.message);
-        console.error("Login error", err);
-      }
-    }
-
-    async function register() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        alert("Registration successful ✅");
-      } catch (err) {
-        alert("Registration error: " + err.message);
-        console.error("Registration error", err);
-      }
-    }
-
-    function logout() {
-      auth.signOut();
-      console.log("User logged out");
-    }
 
     async function addOrder() {
       const order = {
-        id: document.getElementById("orderId").value,
-        client: document.getElementById("client").value,
-        country: document.getElementById("country").value,
-        product: document.getElementById("product").value,
-        totalAmount: parseFloat(document.getElementById("total").value),
-        deposit: parseFloat(document.getElementById("deposit").value),
+        id: document.getElementById("orderId")?.value,
+        client: document.getElementById("client")?.value,
+        country: document.getElementById("country")?.value,
+        product: document.getElementById("product")?.value,
+        totalAmount: parseFloat(document.getElementById("total")?.value || 0),
+        deposit: parseFloat(document.getElementById("deposit")?.value || 0),
         payments: [{
-          amount: parseFloat(document.getElementById("deposit").value),
-          date: document.getElementById("payDate").value,
-          method: document.getElementById("method").value,
-          ref: document.getElementById("ref").value,
+          amount: parseFloat(document.getElementById("deposit")?.value || 0),
+          date: document.getElementById("payDate")?.value,
+          method: document.getElementById("method")?.value,
+          ref: document.getElementById("ref")?.value,
           status: "Completed"
         }],
         notes: "",
         status: "Pending"
       };
+
+      if (!order.id || !order.client || !order.product || isNaN(order.totalAmount)) {
+        alert("❌ Please fill in required fields.");
+        return;
+      }
 
       order.status = order.payments[0].amount >= order.totalAmount ? "Completed" : "Pending";
 
@@ -153,7 +190,7 @@
             <td>${data.product}</td>
             <td>$${data.totalAmount}</td>
             <td>${data.status}</td>
-            <td><button onclick="alert('Not implemented')">Add Payment</button></td>
+            <td><button onclick=\"alert('Not implemented')\">Add Payment</button></td>
           </tr>`;
           tbody.innerHTML += row;
         });
@@ -161,7 +198,8 @@
         console.error("Failed to load orders:", err);
       }
     }
-  </script>
 
+    loadOrders();
+  </script>
 </body>
 </html>
