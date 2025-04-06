@@ -101,6 +101,13 @@
       <h1>CHINACNU STEEL</h1>
     </div>
 
+    <h2>🔍 查询订单 | Search Order</h2>
+    <div class="flex">
+      <input id="searchInput" placeholder="输入订单号或客户名 / Enter Order ID or Client Name">
+    </div>
+    <button onclick="searchOrders()">🔍 查询</button>
+    <div id="searchResults"></div>
+
     <h2>📦 客户订单信息 | Order Info</h2>
     <input id="orderId" placeholder="订单号 / Order ID">
     <input id="client" placeholder="客户名称 / Client Name">
@@ -180,6 +187,11 @@
         payments: [],
         currency
       };
+
+      if (data.payments.length >= 8) {
+        alert("最多只能添加8条付款记录 / Max 8 payment records allowed");
+        return;
+      }
 
       data.client = client;
       data.totalAmount = total;
@@ -331,6 +343,54 @@
         link.click();
       });
     }
+
+    function searchOrders() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const resultsContainer = document.getElementById("searchResults");
+      resultsContainer.innerHTML = "<i>查询中...</i>";
+
+      if (!keyword) {
+        alert("请输入关键词 / Please enter a keyword");
+        return;
+      }
+
+      db.collection("orders").get().then(snapshot => {
+        let found = false;
+        resultsContainer.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const idMatch = data.id.toLowerCase().includes(keyword);
+          const clientMatch = data.client.toLowerCase().includes(keyword);
+
+          if (idMatch || clientMatch) {
+            found = true;
+            const div = document.createElement("div");
+            div.className = "payment-record";
+
+            const symbol = data.currency === "USD" ? "$" : "¥";
+            const records = (data.payments || []).map((p, i) =>
+              `#${i + 1} 金额：${symbol}${p.amount}，日期：${p.date}，备注：${p.note || "-"}`).join("<br>");
+
+            div.innerHTML = `
+              <b>订单号：</b>${data.id}<br>
+              <b>客户：</b>${data.client}<br>
+              <b>总金额：</b>${symbol}${data.totalAmount}<br>
+              <b>已付：</b>${symbol}${data.paidAmount}<br>
+              <b>尾款：</b>${symbol}${data.balance}<br>
+              <b>状态：</b>${data.status}<br><br>
+              <b>付款记录：</b><br>${records || "无记录 / No payments"}
+            `;
+            resultsContainer.appendChild(div);
+          }
+        });
+
+        if (!found) {
+          resultsContainer.innerHTML = "<i>未找到匹配订单 / No matching orders found</i>";
+        }
+      });
+    }
   </script>
 </body>
 </html>
+
