@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHINACNU STEEL - 客户付款管理 | Payment Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -25,6 +26,7 @@
       align-items: center;
       margin-bottom: 30px;
       justify-content: center;
+      flex-wrap: wrap;
     }
     .branding img {
       height: 50px;
@@ -50,6 +52,7 @@
       border-radius: 6px;
       border: 1px solid #ccd9ee;
       font-size: 14px;
+      box-sizing: border-box;
     }
     button {
       background: #0055a5;
@@ -74,7 +77,25 @@
     }
     .flex {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
+    }
+    .flex > * {
+      flex: 1;
+      min-width: 150px;
+    }
+    .progress-bar {
+      margin-top: 10px;
+      height: 14px;
+      background: #e0e0e0;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .progress {
+      height: 100%;
+      background: #4caf50;
+      width: 0;
+      transition: width 0.3s;
     }
   </style>
 </head>
@@ -96,6 +117,7 @@
       </select>
     </div>
     <div class="status" id="summaryStatus"></div>
+    <div class="progress-bar"><div class="progress" id="progress"></div></div>
 
     <h2>💳 添加付款记录 | Add Payment</h2>
     <div class="flex">
@@ -192,7 +214,9 @@
         div.innerText = `#${data.payments.length - i} 金额：${symbol}${p.amount} 日期：${p.date} 备注：${p.note || '-'}`;
         container.appendChild(div);
       });
+      const percent = Math.min(100, (data.paidAmount / data.totalAmount) * 100);
       document.getElementById("summaryStatus").innerText = `状态 / Status：${data.status}｜已付 Paid ${symbol}${data.paidAmount}｜尾款 Balance ${symbol}${data.balance}`;
+      document.getElementById("progress").style.width = `${percent}%`;
     }
   </script>
 </body>
