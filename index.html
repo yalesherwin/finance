@@ -98,5 +98,140 @@
     <h2>CHINACNU STEEL</h2>
   </div>
 
-  <!-- 以下保留原结构不变 -->
-  <!-- ...其余代码保持原样... -->
+  <h2>🔍 客户付款追踪系统</h2>
+  <div class="section-title">添加订单</div>
+  <input id="orderId" placeholder="订单号">
+  <select id="clientSelect" onchange="document.getElementById('client').value = this.value">
+    <option value="">选择客户（历史记录）</option>
+  </select>
+  <input id="client" placeholder="客户名称">
+  <input id="totalAmount" type="number" placeholder="总金额">
+
+  <div id="payments"></div>
+  <button onclick="addPaymentField()">➕ 添加付款记录（最多8次）</button>
+
+  <div class="summary" id="summary"></div>
+  <button onclick="saveOrder()">💾 保存订单</button>
+
+  <div class="section-title">查询订单记录</div>
+  <input id="searchId" placeholder="输入订单号进行查询">
+  <button onclick="searchOrder()">🔎 查询</button>
+  <pre id="result"></pre>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBIhaNpTF7eOPd4UzH0_WuBHMKohaZ9fl0",
+    authDomain: "cnu-tracker.firebaseapp.com",
+    projectId: "cnu-tracker",
+    storageBucket: "cnu-tracker.appspot.com",
+    messagingSenderId: "334145477498",
+    appId: "1:334145477498:web:d0dd919e8a786bfc7694c3"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  let paymentCount = 0;
+
+  function addPaymentField() {
+    if (paymentCount >= 8) return alert("最多支持8次付款记录");
+    const container = document.getElementById("payments");
+    const div = document.createElement("div");
+    div.className = "payment-entry";
+    div.innerHTML = `
+      <div class="flex">
+        <input type="number" placeholder="付款金额" class="payment-amount">
+        <input type="date" class="payment-date">
+        <textarea placeholder="付款备注" class="payment-note"></textarea>
+      </div>
+    `;
+    container.appendChild(div);
+    paymentCount++;
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const total = parseFloat(document.getElementById("totalAmount").value || 0);
+    const amounts = [...document.getElementsByClassName("payment-amount")].map(i => parseFloat(i.value || 0));
+    const paid = amounts.reduce((a, b) => a + b, 0);
+    const balance = total - paid;
+    document.getElementById("summary").innerText = `已付：¥${paid.toFixed(2)}，尾款：¥${balance.toFixed(2)}`;
+  }
+
+  document.getElementById("payments").addEventListener("input", updateSummary);
+  document.getElementById("totalAmount").addEventListener("input", updateSummary);
+
+  async function saveOrder() {
+    const id = document.getElementById("orderId").value.trim();
+    const client = document.getElementById("client").value.trim();
+    const total = parseFloat(document.getElementById("totalAmount").value);
+    if (!id || !client || isNaN(total)) return alert("请填写完整订单信息");
+
+    const paymentEls = document.querySelectorAll(".payment-entry");
+    const newPayments = [...paymentEls].map(p => ({
+      amount: parseFloat(p.querySelector(".payment-amount").value || 0),
+      date: p.querySelector(".payment-date").value,
+      note: p.querySelector(".payment-note").value
+    })).filter(p => p.amount > 0);
+
+    let existingData = await db.collection("orders").doc(id).get();
+    let oldPayments = [];
+    if (existingData.exists) {
+      oldPayments = existingData.data().payments || [];
+    }
+
+    const allPayments = [...oldPayments, ...newPayments];
+    const paidAmount = allPayments.reduce((a, b) => a + b.amount, 0);
+    const balance = total - paidAmount;
+
+    await db.collection("orders").doc(id).set({
+      id,
+      client,
+      totalAmount: total,
+      payments: allPayments,
+      paidAmount,
+      balance,
+      status: balance <= 0 ? "已结清" : "部分付款"
+    });
+
+    alert("✅ 订单保存成功，已合并付款记录！");
+    loadClients();
+  }
+
+  async function searchOrder() {
+    const id = document.getElementById("searchId").value.trim();
+    if (!id) return;
+    const doc = await db.collection("orders").doc(id).get();
+    if (!doc.exists) {
+      document.getElementById("result").innerText = "❌ 未找到该订单。";
+    } else {
+      const data = doc.data();
+      let text = `📦 订单号：${data.id}\n👤 客户：${data.client}\n💰 总金额：¥${data.totalAmount}\n✅ 已付：¥${data.paidAmount}\n❗ 尾款：¥${data.balance}\n📊 状态：${data.status}\n\n付款记录：\n`;
+      data.payments.forEach((p, i) => {
+        text += `#${i + 1} 金额：¥${p.amount} 日期：${p.date} 备注：${p.note}\n`;
+      });
+      document.getElementById("result").innerText = text;
+    }
+  }
+
+  async function loadClients() {
+    const snapshot = await db.collection("orders").get();
+    const clients = new Set();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.client) clients.add(data.client);
+    });
+    const select = document.getElementById("clientSelect");
+    select.innerHTML = '<option value="">选择客户（历史记录）</option>';
+    [...clients].sort().forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+  }
+
+  loadClients();
+</script>
+</body>
+</html>
