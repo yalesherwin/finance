@@ -108,7 +108,13 @@
     <h2>📦 客户订单信息 | Order Info</h2>
     <input id="orderId" placeholder="订单号 / Order ID">
     <input id="client" placeholder="客户名称 / Client Name">
-    
+<div class="flex">
+  <input type="number" id="total" placeholder="订单总金额 / Total Amount">
+  <select id="currency">
+    <option value="CNY">人民币 (¥)</option>
+    <option value="USD">美元 ($)</option>
+  </select>
+</div>
 <button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
     <div class="status" id="summaryStatus"></div>
     <div class="progress-bar"><div class="progress" id="progress"></div></div>
