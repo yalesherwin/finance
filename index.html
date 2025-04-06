@@ -63,6 +63,7 @@
     </select>
   </div>
   <button onclick="loadOrder()">🔍 加载订单数据 | Load Order</button>
+  <button onclick="createNewOrder()">📄 创建新订单 | Create New Order</button>
   <button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
   <div class="status" id="summaryStatus"></div>
   <div class="progress-bar"><div class="progress" id="progress"></div></div>
@@ -171,9 +172,41 @@
       } else {
         alert("订单不存在 / Order not found");
       }
-    }).catch(err => {
-      console.error("读取失败", err);
-      alert("查询失败，请检查网络或数据库连接");
+    });
+  }
+
+  function createNewOrder() {
+    const orderId = document.getElementById('orderId').value.trim();
+    const client = document.getElementById('client').value.trim();
+    const total = parseFloat(document.getElementById('total').value);
+    const currency = document.getElementById('currency').value;
+
+    if (!orderId || !client || isNaN(total)) {
+      alert("请输入完整的订单号、客户名和总金额");
+      return;
+    }
+
+    const ref = db.collection("orders").doc(orderId);
+
+    ref.get().then(doc => {
+      if (doc.exists) {
+        alert("该订单已存在，不能重复创建！");
+      } else {
+        const newData = {
+          id: orderId,
+          client,
+          totalAmount: total,
+          currency,
+          payments: [],
+          paidAmount: 0,
+          balance: total,
+          status: "未付款 / Unpaid"
+        };
+        ref.set(newData).then(() => {
+          alert("✅ 新订单已创建！");
+          renderRecords(newData);
+        });
+      }
     });
   }
 
