@@ -4,93 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHINACNU STEEL - 客户付款管理 | Payment Tracker</title>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js">
-    function exportToCSV() {
-      const orderId = document.getElementById("orderId").value.trim();
-      if (!orderId) {
-        alert("请先输入订单号 / Please enter Order ID first");
-        return;
-      }
-
-      db.collection("orders").doc(orderId).get().then(doc => {
-        if (!doc.exists) {
-          alert("订单不存在 / Order not found");
-          return;
-        }
-
-        const data = doc.data();
-        const rows = [
-          ["订单号", data.id],
-          ["客户名称", data.client],
-          ["总金额", data.totalAmount],
-          ["已付", data.paidAmount],
-          ["尾款", data.balance],
-          ["币种", data.currency],
-          [],
-          ["付款记录编号", "金额", "日期", "备注"]
-        ];
-
-        data.payments.forEach((p, index) => {
-          rows.push([index + 1, p.amount, p.date, p.note || ""]);
-        });
-
-        let csvContent = "﻿" + rows.map(e => e.join(",")).join("
-");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${orderId}_record.csv`;
-        link.click();
-      });
-    }
-  
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js">function exportAllOrders() {
-  db.collection("orders").get().then(snapshot => {
-    const rows = [
-      ["订单号", "客户", "总金额", "已付", "尾款", "币种", "付款编号", "付款金额", "日期", "备注"]
-    ];
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.payments && data.payments.length > 0) {
-        data.payments.forEach((p, index) => {
-          rows.push([
-            data.id,
-            data.client,
-            data.totalAmount,
-            data.paidAmount,
-            data.balance,
-            data.currency,
-            index + 1,
-            p.amount,
-            p.date,
-            p.note || ""
-          ]);
-        });
-      } else {
-        rows.push([
-          data.id,
-          data.client,
-          data.totalAmount,
-          data.paidAmount,
-          data.balance,
-          data.currency,
-          "-", "-", "-", "-"
-        ]);
-      }
-    });
-
-    const csvContent = "﻿" + rows.map(e => e.join(",")).join("
-");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `所有订单记录_All_Orders.csv`;
-    link.click();
-  });
-}
-
-$1
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -208,10 +123,11 @@ $1
     <textarea id="note" placeholder="付款备注（可选） / Payment Note (optional)"></textarea>
     <button onclick="addPayment()">➕ 添加付款记录 | Add Payment</button>
 
-    
-$1
-  <button onclick="exportAllOrders()">📦 导出所有订单</button>
-</div>
+    <h2>📃 当前付款记录 | Payment Records</h2>
+    <div style="text-align:right;margin-bottom:10px">
+      <button onclick="exportToCSV()">📥 导出 Excel</button>
+      <button onclick="exportAllOrders()">📦 导出所有订单</button>
+    </div>
     <div id="records"></div>
   </div>
 
@@ -332,7 +248,89 @@ $1
       document.getElementById("summaryStatus").innerText = `状态 / Status：${data.status}｜已付 Paid ${symbol}${data.paidAmount}｜尾款 Balance ${symbol}${data.balance}`;
       document.getElementById("progress").style.width = `${percent}%`;
     }
+
+    function exportToCSV() {
+      const orderId = document.getElementById("orderId").value.trim();
+      if (!orderId) {
+        alert("请先输入订单号 / Please enter Order ID first");
+        return;
+      }
+
+      db.collection("orders").doc(orderId).get().then(doc => {
+        if (!doc.exists) {
+          alert("订单不存在 / Order not found");
+          return;
+        }
+
+        const data = doc.data();
+        const rows = [
+          ["订单号", data.id],
+          ["客户名称", data.client],
+          ["总金额", data.totalAmount],
+          ["已付", data.paidAmount],
+          ["尾款", data.balance],
+          ["币种", data.currency],
+          [],
+          ["付款记录编号", "金额", "日期", "备注"]
+        ];
+
+        data.payments.forEach((p, index) => {
+          rows.push([index + 1, p.amount, p.date, p.note || ""]);
+        });
+
+        let csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${orderId}_record.csv`;
+        link.click();
+      });
+    }
+
+    function exportAllOrders() {
+      db.collection("orders").get().then(snapshot => {
+        const rows = [
+          ["订单号", "客户", "总金额", "已付", "尾款", "币种", "付款编号", "付款金额", "日期", "备注"]
+        ];
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.payments && data.payments.length > 0) {
+            data.payments.forEach((p, index) => {
+              rows.push([
+                data.id,
+                data.client,
+                data.totalAmount,
+                data.paidAmount,
+                data.balance,
+                data.currency,
+                index + 1,
+                p.amount,
+                p.date,
+                p.note || ""
+              ]);
+            });
+          } else {
+            rows.push([
+              data.id,
+              data.client,
+              data.totalAmount,
+              data.paidAmount,
+              data.balance,
+              data.currency,
+              "-", "-", "-", "-"
+            ]);
+          }
+        });
+
+        const csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `所有订单记录_All_Orders.csv`;
+        link.click();
+      });
+    }
   </script>
 </body>
 </html>
-
