@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CHINACNU STEEL - Financial Dashboard</title>
+  <title>CHINACNU STEEL - Order Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
@@ -36,173 +36,172 @@
       letter-spacing: 1px;
       margin: 0;
     }
-    table {
+    input, textarea, button {
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 30px;
-    }
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-    th {
-      background-color: #f3f6fa;
-      color: #2c3e50;
-      font-weight: 600;
-    }
-    tr:hover {
-      background-color: #f9f9f9;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
-    input, select {
       padding: 10px;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 14px;
     }
+    .payment-entry {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      background: #f9fbfd;
+    }
+    .flex {
+      display: flex;
+      gap: 10px;
+    }
+    .flex input, .flex textarea {
+      flex: 1;
+    }
+    .section-title {
+      margin-top: 30px;
+      font-weight: bold;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 5px;
+      color: #2c3e50;
+      font-size: 18px;
+    }
+    .summary {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #2980b9;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
     button {
-      padding: 10px 20px;
       background: #3498db;
       color: white;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
       font-weight: bold;
-      transition: background 0.3s ease;
+      cursor: pointer;
+      transition: background 0.3s;
     }
     button:hover {
       background: #2980b9;
     }
-    .section-title {
-      margin-top: 40px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #2c3e50;
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 5px;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="branding">
-      <img src="https://chinacnu.com/logo.png" alt="CHINACNU STEEL Logo">
-      <h2>CHINACNU STEEL</h2>
-    </div>
-
-    <div class="section-title">Order List</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Client</th>
-          <th>Product</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="order-body"></tbody>
-    </table>
-
-    <div class="section-title">Add New Order</div>
-    <div class="form-grid">
-      <input id="orderId" placeholder="Order ID">
-      <input id="client" placeholder="Client Name">
-      <input id="country" placeholder="Country">
-      <input id="product" placeholder="Product">
-      <input id="total" placeholder="Total Amount">
-      <input id="deposit" placeholder="Deposit Amount">
-      <input type="date" id="payDate">
-      <input id="method" placeholder="Payment Method">
-      <input id="ref" placeholder="Transaction Reference">
-    </div>
-    <div style="margin-top: 20px; text-align: center;">
-      <button onclick="addOrder()">💾 Save Order</button>
-    </div>
+<div class="container">
+  <div class="branding">
+    <img src="https://chinacnu.com/logo.png" alt="CHINACNU STEEL Logo">
+    <h2>CHINACNU STEEL</h2>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBIhaNpTF7eOPd4UzH0_WuBHMKohaZ9fl0",
-      authDomain: "cnu-tracker.firebaseapp.com",
-      projectId: "cnu-tracker",
-      storageBucket: "cnu-tracker.firebasestorage.app",
-      messagingSenderId: "334145477498",
-      appId: "1:334145477498:web:d0dd919e8a786bfc7694c3"
-    };
+  <h2>🔍 客户付款追踪系统</h2>
+  <div class="section-title">添加订单</div>
+  <input id="orderId" placeholder="订单号">
+  <input id="client" placeholder="客户名称">
+  <input id="totalAmount" type="number" placeholder="总金额">
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <div id="payments"></div>
+  <button onclick="addPaymentField()">➕ 添加付款记录（最多8次）</button>
 
-    async function addOrder() {
-      const order = {
-        id: document.getElementById("orderId")?.value,
-        client: document.getElementById("client")?.value,
-        country: document.getElementById("country")?.value,
-        product: document.getElementById("product")?.value,
-        totalAmount: parseFloat(document.getElementById("total")?.value || 0),
-        deposit: parseFloat(document.getElementById("deposit")?.value || 0),
-        payments: [{
-          amount: parseFloat(document.getElementById("deposit")?.value || 0),
-          date: document.getElementById("payDate")?.value,
-          method: document.getElementById("method")?.value,
-          ref: document.getElementById("ref")?.value,
-          status: "Completed"
-        }],
-        notes: "",
-        status: "Pending"
-      };
+  <div class="summary" id="summary"></div>
+  <button onclick="saveOrder()">💾 保存订单</button>
 
-      console.log("Order Data:", order); // Debug: check if the data is being captured correctly
+  <div class="section-title">查询订单记录</div>
+  <input id="searchId" placeholder="输入订单号进行查询">
+  <button onclick="searchOrder()">🔎 查询</button>
+  <pre id="result"></pre>
+</div>
 
-      if (!order.id || !order.client || !order.product || isNaN(order.totalAmount)) {
-        alert("❌ Please fill in required fields.");
-        return;
-      }
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBIhaNpTF7eOPd4UzH0_WuBHMKohaZ9fl0",
+    authDomain: "cnu-tracker.firebaseapp.com",
+    projectId: "cnu-tracker",
+    storageBucket: "cnu-tracker.appspot.com",
+    messagingSenderId: "334145477498",
+    appId: "1:334145477498:web:d0dd919e8a786bfc7694c3"
+  };
 
-      order.status = order.payments[0].amount >= order.totalAmount ? "Completed" : "Pending";
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-      try {
-        console.log("Saving order to Firestore..."); // Debug: ensuring save action is triggered
-        await db.collection("orders").add(order);
-        alert("✅ Order saved successfully");
-        loadOrders(); // Refresh the list of orders after adding
-      } catch (err) {
-        alert("❌ Failed to save order: " + err.message);
-        console.error("Save Order Error", err);
-      }
+  let paymentCount = 0;
+
+  function addPaymentField() {
+    if (paymentCount >= 8) return alert("最多支持8次付款记录");
+    const container = document.getElementById("payments");
+    const div = document.createElement("div");
+    div.className = "payment-entry";
+    div.innerHTML = `
+      <div class="flex">
+        <input type="number" placeholder="付款金额" class="payment-amount">
+        <input type="date" class="payment-date">
+        <textarea placeholder="付款备注" class="payment-note"></textarea>
+      </div>
+    `;
+    container.appendChild(div);
+    paymentCount++;
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const total = parseFloat(document.getElementById("totalAmount").value || 0);
+    const amounts = [...document.getElementsByClassName("payment-amount")].map(i => parseFloat(i.value || 0));
+    const paid = amounts.reduce((a, b) => a + b, 0);
+    const balance = total - paid;
+    document.getElementById("summary").innerText = `已付：¥${paid.toFixed(2)}，尾款：¥${balance.toFixed(2)}`;
+  }
+
+  document.getElementById("payments").addEventListener("input", updateSummary);
+  document.getElementById("totalAmount").addEventListener("input", updateSummary);
+
+  async function saveOrder() {
+    const id = document.getElementById("orderId").value.trim();
+    const client = document.getElementById("client").value.trim();
+    const total = parseFloat(document.getElementById("totalAmount").value);
+    if (!id || !client || isNaN(total)) return alert("请填写完整订单信息");
+
+    const paymentEls = document.querySelectorAll(".payment-entry");
+    const payments = [...paymentEls].map(p => ({
+      amount: parseFloat(p.querySelector(".payment-amount").value || 0),
+      date: p.querySelector(".payment-date").value,
+      note: p.querySelector(".payment-note").value
+    })).filter(p => p.amount > 0);
+
+    const paidAmount = payments.reduce((a, b) => a + b.amount, 0);
+    const balance = total - paidAmount;
+
+    await db.collection("orders").doc(id).set({
+      id,
+      client,
+      totalAmount: total,
+      payments,
+      paidAmount,
+      balance,
+      status: balance <= 0 ? "已结清" : "部分付款"
+    });
+
+    alert("✅ 订单保存成功！");
+  }
+
+  async function searchOrder() {
+    const id = document.getElementById("searchId").value.trim();
+    if (!id) return;
+    const doc = await db.collection("orders").doc(id).get();
+    if (!doc.exists) {
+      document.getElementById("result").innerText = "❌ 未找到该订单。";
+    } else {
+      const data = doc.data();
+      let text = `📦 订单号：${data.id}\n👤 客户：${data.client}\n💰 总金额：¥${data.totalAmount}\n✅ 已付：¥${data.paidAmount}\n❗ 尾款：¥${data.balance}\n📊 状态：${data.status}\n\n付款记录：\n`;
+      data.payments.forEach((p, i) => {
+        text += `#${i + 1} 金额：¥${p.amount} 日期：${p.date} 备注：${p.note}\n`;
+      });
+      document.getElementById("result").innerText = text;
     }
-
-    async function loadOrders() {
-      try {
-        const snapshot = await db.collection("orders").get();
-        const tbody = document.getElementById("order-body");
-        tbody.innerHTML = '';
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const row = `<tr>
-            <td>${data.id}</td>
-            <td>${data.client}</td>
-            <td>${data.product}</td>
-            <td>$${data.totalAmount}</td>
-            <td>${data.status}</td>
-            <td><button onclick=\"alert('Not implemented')\">Add Payment</button></td>
-          </tr>`;
-          tbody.innerHTML += row;
-        });
-      } catch (err) {
-        console.error("Failed to load orders:", err);
-      }
-    }
-
-    loadOrders(); // Initial load of orders
-  </script>
+  }
+</script>
 </body>
 </html>
