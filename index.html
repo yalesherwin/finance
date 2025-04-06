@@ -15,40 +15,32 @@
     }
     .container {
       max-width: 1000px;
-      margin: 30px auto;
+      margin: 20px auto;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 16px rgba(0, 85, 165, 0.08);
-      padding: 30px;
+      padding: 20px;
     }
     .branding {
-      display: flex;
-      align-items: center;
-      margin-bottom: 30px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .branding img {
-      height: 50px;
-      margin-right: 15px;
-      border-radius: 6px;
+      text-align: center;
+      margin-bottom: 20px;
     }
     .branding h1 {
-      font-size: 26px;
+      font-size: 24px;
       color: #0055a5;
       margin: 0;
     }
     h2 {
       color: #003c73;
-      font-size: 20px;
-      margin-top: 40px;
+      font-size: 18px;
+      margin-top: 30px;
       border-bottom: 2px solid #0055a5;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
     }
     input, textarea, button, select {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
+      margin: 8px 0;
       border-radius: 6px;
       border: 1px solid #ccd9ee;
       font-size: 14px;
@@ -81,8 +73,12 @@
       gap: 10px;
     }
     .flex > * {
-      flex: 1;
-      min-width: 150px;
+      flex: 1 1 100%;
+    }
+    @media(min-width: 600px) {
+      .flex > * {
+        flex: 1 1 calc(50% - 10px);
+      }
     }
     .progress-bar {
       margin-top: 10px;
@@ -102,20 +98,20 @@
 <body>
   <div class="container">
     <div class="branding">
-  <h1>CHINACNU STEEL</h1>
-</div>
+      <h1>CHINACNU STEEL</h1>
+    </div>
 
     <h2>📦 客户订单信息 | Order Info</h2>
     <input id="orderId" placeholder="订单号 / Order ID">
     <input id="client" placeholder="客户名称 / Client Name">
-<div class="flex">
-  <input type="number" id="total" placeholder="订单总金额 / Total Amount">
-  <select id="currency">
-    <option value="CNY">人民币 (¥)</option>
-    <option value="USD">美元 ($)</option>
-  </select>
-</div>
-<button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
+    <div class="flex">
+      <input type="number" id="total" placeholder="订单总金额 / Total Amount">
+      <select id="currency">
+        <option value="CNY">人民币 (¥)</option>
+        <option value="USD">美元 ($)</option>
+      </select>
+    </div>
+    <button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
     <div class="status" id="summaryStatus"></div>
     <div class="progress-bar"><div class="progress" id="progress"></div></div>
 
@@ -201,36 +197,36 @@
     }
 
     function updateTotal() {
-  const orderId = document.getElementById('orderId').value.trim();
-  const newTotal = parseFloat(document.getElementById('total').value);
-  if (!orderId || isNaN(newTotal)) {
-    alert('请输入订单号和新的订单总金额 / Please enter Order ID and new Total Amount');
-    return;
-  }
-  const ref = db.collection("orders").doc(orderId);
-  ref.get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      data.totalAmount = newTotal;
-      const paidAmount = data.payments.reduce((a, b) => a + b.amount, 0);
-      const balance = newTotal - paidAmount;
-      const status = balance <= 0 ? "已结清 / Paid" : paidAmount === 0 ? "未付款 / Unpaid" : "部分付款 / Partial";
-      ref.set({
-        ...data,
-        paidAmount,
-        balance,
-        status
-      }).then(() => {
-        alert("✅ 总金额已更新 / Total amount updated");
-        renderRecords({ ...data, paidAmount, balance, status });
+      const orderId = document.getElementById('orderId').value.trim();
+      const newTotal = parseFloat(document.getElementById('total').value);
+      if (!orderId || isNaN(newTotal)) {
+        alert('请输入订单号和新的订单总金额 / Please enter Order ID and new Total Amount');
+        return;
+      }
+      const ref = db.collection("orders").doc(orderId);
+      ref.get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          data.totalAmount = newTotal;
+          const paidAmount = data.payments.reduce((a, b) => a + b.amount, 0);
+          const balance = newTotal - paidAmount;
+          const status = balance <= 0 ? "已结清 / Paid" : paidAmount === 0 ? "未付款 / Unpaid" : "部分付款 / Partial";
+          ref.set({
+            ...data,
+            paidAmount,
+            balance,
+            status
+          }).then(() => {
+            alert("✅ 总金额已更新 / Total amount updated");
+            renderRecords({ ...data, paidAmount, balance, status });
+          });
+        } else {
+          alert("未找到订单 / Order not found");
+        }
       });
-    } else {
-      alert("未找到订单 / Order not found");
     }
-  });
-}
 
-
+    function renderRecords(data) {
       const container = document.getElementById("records");
       container.innerHTML = "";
       const symbol = data.currency === 'USD' ? '$' : '¥';
@@ -251,4 +247,3 @@
   </script>
 </body>
 </html>
-
