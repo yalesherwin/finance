@@ -7,210 +7,348 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f8fc;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 1000px;
-      margin: 20px auto;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 85, 165, 0.08);
-      padding: 20px;
-    }
-    .branding {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .branding h1 {
-      font-size: 24px;
-      color: #0055a5;
-      margin: 0;
-    }
-    h2 {
-      color: #003c73;
-      font-size: 18px;
-      margin-top: 30px;
-      border-bottom: 2px solid #0055a5;
-      padding-bottom: 4px;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f8fc; margin: 0; padding: 0; }
+    .container { max-width: 1000px; margin: 20px auto; background: #fff; border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 85, 165, 0.08); padding: 20px; }
+    .branding { text-align: center; margin-bottom: 20px; }
+    .branding h1 { font-size: 24px; color: #0055a5; margin: 0; }
+    h2 { color: #003c73; font-size: 18px; margin-top: 30px; border-bottom: 2px solid #0055a5;
+      padding-bottom: 4px; }
     input, textarea, button, select {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #ccd9ee;
-      font-size: 14px;
-      box-sizing: border-box;
+      width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px;
+      border: 1px solid #ccd9ee; font-size: 14px; box-sizing: border-box;
     }
     button {
-      background: #0055a5;
-      color: #fff;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
+      background: #0055a5; color: #fff; border: none; font-weight: bold; cursor: pointer;
     }
-    button:hover {
-      background: #003c73;
-    }
+    button:hover { background: #003c73; }
     .payment-record {
-      background: #eef5fc;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
+      background: #eef5fc; padding: 10px; border-radius: 6px; margin-bottom: 10px;
     }
-    .status {
-      font-weight: bold;
-      color: #0055a5;
-      margin-top: 10px;
-    }
-    .flex {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .flex > * {
-      flex: 1 1 100%;
-    }
+    .status { font-weight: bold; color: #0055a5; margin-top: 10px; }
+    .flex { display: flex; flex-wrap: wrap; gap: 10px; }
+    .flex > * { flex: 1 1 100%; }
     @media(min-width: 600px) {
-      .flex > * {
-        flex: 1 1 calc(50% - 10px);
-      }
+      .flex > * { flex: 1 1 calc(50% - 10px); }
     }
     .progress-bar {
-      margin-top: 10px;
-      height: 14px;
-      background: #e0e0e0;
-      border-radius: 7px;
-      overflow: hidden;
+      margin-top: 10px; height: 14px; background: #e0e0e0;
+      border-radius: 7px; overflow: hidden;
     }
     .progress {
-      height: 100%;
-      background: #4caf50;
-      width: 0;
-      transition: width 0.3s;
+      height: 100%; background: #4caf50; width: 0; transition: width 0.3s;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="branding">
-      <h1>CHINACNU STEEL</h1>
-    </div>
+<div class="container">
+  <div class="branding"><h1>CHINACNU STEEL</h1></div>
 
-    <h2>🔍 查询订单 | Search Order</h2>
-    <div class="flex">
-      <input id="searchInput" inputmode="text" autocorrect="off" autocomplete="off" placeholder="输入订单号或客户名 / Enter Order ID or Client Name">
-    </div>
-    <button onclick="searchOrders()">🔍 查询</button>
-    <div id="searchResults"></div>
-
-    <h2>📦 客户订单信息 | Order Info</h2>
-    <input id="orderId" placeholder="订单号 / Order ID">
-    <input id="client" placeholder="客户名称 / Client Name">
-    <div class="flex">
-      <input type="number" id="total" placeholder="订单总金额 / Total Amount">
-      <select id="currency">
-        <option value="CNY">人民币 (¥)</option>
-        <option value="USD">美元 ($)</option>
-      </select>
-    </div>
-    <button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
-    <div class="status" id="summaryStatus"></div>
-    <div class="progress-bar"><div class="progress" id="progress"></div></div>
-
-    <h2>💳 添加付款记录 | Add Payment</h2>
-    <div class="flex">
-      <input type="number" id="amount" placeholder="付款金额 / Amount">
-      <input type="date" id="date">
-    </div>
-    <textarea id="note" placeholder="付款备注（可选） / Payment Note (optional)"></textarea>
-    <button onclick="addPayment()">➕ 添加付款记录 | Add Payment</button>
-
-    <h2>📃 当前付款记录 | Payment Records</h2>
-    <div style="text-align:right;margin-bottom:10px">
-      <button onclick="exportToCSV()">📥 导出 Excel</button>
-      <button onclick="exportAllOrders()">📦 导出所有订单</button>
-    </div>
-    <div id="records"></div>
+  <h2>🔍 查询订单 | Search Order</h2>
+  <div class="flex">
+    <input id="searchInput" inputmode="text" autocorrect="off" autocomplete="off"
+      placeholder="输入订单号或客户名 / Enter Order ID or Client Name">
   </div>
+  <button onclick="searchOrders()">🔍 查询</button>
+  <div id="searchResults"></div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBIhaNpTF7eOPd4UzH0_WuBHMKohaZ9fl0",
-      authDomain: "cnu-tracker.firebaseapp.com",
-      projectId: "cnu-tracker",
-      storageBucket: "cnu-tracker.appspot.com",
-      messagingSenderId: "334145477498",
-      appId: "1:334145477498:web:d0dd919e8a786bfc7694c3"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <h2>📦 客户订单信息 | Order Info</h2>
+  <input id="orderId" placeholder="订单号 / Order ID">
+  <input id="client" placeholder="客户名称 / Client Name">
+  <div class="flex">
+    <input type="number" id="total" placeholder="订单总金额 / Total Amount">
+    <select id="currency">
+      <option value="CNY">人民币 (¥)</option>
+      <option value="USD">美元 ($)</option>
+    </select>
+  </div>
+  <button onclick="loadOrder()">🔍 加载订单数据 | Load Order</button>
+  <button onclick="updateTotal()">🔁 更新订单总金额 | Update Total Amount</button>
+  <div class="status" id="summaryStatus"></div>
+  <div class="progress-bar"><div class="progress" id="progress"></div></div>
 
-    function cleanString(str) {
-      return String(str || "")
-        .normalize("NFKC")
-        .replace(/[\u200B-\u200D\uFEFF]/g, "")
-        .replace(/\s+/g, "")
-        .toLowerCase();
+  <h2>💳 添加付款记录 | Add Payment</h2>
+  <div class="flex">
+    <input type="number" id="amount" placeholder="付款金额 / Amount">
+    <input type="date" id="date">
+  </div>
+  <textarea id="note" placeholder="付款备注（可选） / Payment Note (optional)"></textarea>
+  <button onclick="addPayment()">➕ 添加付款记录 | Add Payment</button>
+
+  <h2>📃 当前付款记录 | Payment Records</h2>
+  <div style="text-align:right;margin-bottom:10px">
+    <button onclick="exportToCSV()">📥 导出 Excel</button>
+    <button onclick="exportAllOrders()">📦 导出所有订单</button>
+  </div>
+  <div id="records"></div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBIhaNpTF7eOPd4UzH0_WuBHMKohaZ9fl0",
+    authDomain: "cnu-tracker.firebaseapp.com",
+    projectId: "cnu-tracker",
+    storageBucket: "cnu-tracker.appspot.com",
+    messagingSenderId: "334145477498",
+    appId: "1:334145477498:web:d0dd919e8a786bfc7694c3"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function toHalfWidth(str) {
+    return str.replace(/[\uFF01-\uFF5E]/g, ch =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+    ).replace(/\u3000/g, ' ');
+  }
+
+  function cleanString(str) {
+    return toHalfWidth(String(str || ""))
+      .normalize("NFKC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+  }
+
+  function searchOrders() {
+    const keywordRaw = document.getElementById("searchInput").value;
+    const keyword = cleanString(keywordRaw);
+    const resultsContainer = document.getElementById("searchResults");
+    resultsContainer.innerHTML = "<i>查询中...</i>";
+
+    if (!keyword) {
+      alert("请输入关键词 / Please enter a keyword");
+      return;
     }
 
-    function searchOrders() {
-      const keywordRaw = document.getElementById("searchInput").value;
-      const keyword = cleanString(keywordRaw);
+    db.collection("orders").get().then(snapshot => {
+      let found = false;
+      resultsContainer.innerHTML = "";
 
-      const resultsContainer = document.getElementById("searchResults");
-      resultsContainer.innerHTML = "<i>查询中...</i>";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const orderId = cleanString(data.id);
+        const clientName = cleanString(data.client);
 
-      if (!keyword) {
-        alert("请输入关键词 / Please enter a keyword");
+        if (orderId.includes(keyword) || clientName.includes(keyword)) {
+          found = true;
+          const div = document.createElement("div");
+          div.className = "payment-record";
+          div.style.background = "#eaf3fb";
+          const symbol = data.currency === "USD" ? "$" : "¥";
+          const records = (data.payments || []).map((p, i) =>
+            `#${i + 1} 金额：${symbol}${p.amount}，日期：${p.date}，备注：${p.note || "-"}`).join("<br>");
+
+          div.innerHTML = `
+            <b>订单号：</b>${data.id}<br>
+            <b>客户：</b>${data.client}<br>
+            <b>总金额：</b>${symbol}${data.totalAmount}<br>
+            <b>已付：</b>${symbol}${data.paidAmount}<br>
+            <b>尾款：</b>${symbol}${data.balance}<br>
+            <b>状态：</b>${data.status}<br><br>
+            <b>付款记录：</b><br>${records || "无记录 / No payments"}
+          `;
+          resultsContainer.appendChild(div);
+        }
+      });
+
+      if (!found) {
+        resultsContainer.innerHTML = "<i>未找到匹配订单 / No matching orders found</i>";
+      }
+    });
+  }
+
+  function loadOrder() {
+    const id = document.getElementById("orderId").value.trim();
+    if (!id) {
+      alert("请输入订单号");
+      return;
+    }
+    db.collection("orders").doc(id).get().then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("client").value = data.client;
+        document.getElementById("total").value = data.totalAmount;
+        document.getElementById("currency").value = data.currency || 'CNY';
+        renderRecords(data);
+      } else {
+        alert("订单不存在 / Order not found");
+      }
+    }).catch(err => {
+      console.error("读取失败", err);
+      alert("查询失败，请检查网络或数据库连接");
+    });
+  }
+
+  function addPayment() {
+    const orderId = document.getElementById('orderId').value.trim();
+    const client = document.getElementById('client').value.trim();
+    const total = parseFloat(document.getElementById('total').value);
+    const amount = parseFloat(document.getElementById('amount').value);
+    const date = document.getElementById('date').value;
+    const note = document.getElementById('note').value.trim();
+    const currency = document.getElementById('currency').value;
+
+    if (!orderId || !client || isNaN(total) || isNaN(amount) || !date) {
+      alert("请填写完整信息 / Please complete all fields");
+      return;
+    }
+
+    const ref = db.collection("orders").doc(orderId);
+    ref.get().then(doc => {
+      let data = doc.exists ? doc.data() : {
+        id: orderId,
+        client,
+        totalAmount: total,
+        payments: [],
+        currency
+      };
+
+      if (data.payments.length >= 8) {
+        alert("最多只能添加8条付款记录 / Max 8 payment records allowed");
         return;
       }
 
-      db.collection("orders").get().then(snapshot => {
-        let found = false;
-        resultsContainer.innerHTML = "";
+      data.client = client;
+      data.totalAmount = total;
+      data.currency = currency;
+      data.payments.push({ amount, date, note });
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const orderId = cleanString(data.id);
-          const clientName = cleanString(data.client);
+      const paidAmount = data.payments.reduce((a, b) => a + b.amount, 0);
+      const balance = total - paidAmount;
+      const status = balance <= 0 ? "已结清 / Paid" : paidAmount === 0 ? "未付款 / Unpaid" : "部分付款 / Partial";
 
-          if (orderId.includes(keyword) || clientName.includes(keyword)) {
-            found = true;
-            const div = document.createElement("div");
-            div.className = "payment-record";
-            div.style.background = "#eaf3fb";
-
-            const symbol = data.currency === "USD" ? "$" : "¥";
-            const records = (data.payments || []).map((p, i) =>
-              `#${i + 1} 金额：${symbol}${p.amount}，日期：${p.date}，备注：${p.note || "-"}`).join("<br>");
-
-            div.innerHTML = `
-              <b>订单号：</b>${data.id}<br>
-              <b>客户：</b>${data.client}<br>
-              <b>总金额：</b>${symbol}${data.totalAmount}<br>
-              <b>已付：</b>${symbol}${data.paidAmount}<br>
-              <b>尾款：</b>${symbol}${data.balance}<br>
-              <b>状态：</b>${data.status}<br><br>
-              <b>付款记录：</b><br>${records || "无记录 / No payments"}
-            `;
-            resultsContainer.appendChild(div);
-          }
-        });
-
-        if (!found) {
-          resultsContainer.innerHTML = "<i>未找到匹配订单 / No matching orders found</i>";
-        }
+      ref.set({ ...data, paidAmount, balance, status }).then(() => {
+        alert("✅ 已添加付款记录 / Payment added");
+        renderRecords(data);
       });
+    });
+  }
+
+  function updateTotal() {
+    const orderId = document.getElementById('orderId').value.trim();
+    const newTotal = parseFloat(document.getElementById('total').value);
+    if (!orderId || isNaN(newTotal)) {
+      alert('请输入订单号和新的订单总金额');
+      return;
+    }
+    const ref = db.collection("orders").doc(orderId);
+    ref.get().then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        data.totalAmount = newTotal;
+        const paidAmount = data.payments.reduce((a, b) => a + b.amount, 0);
+        const balance = newTotal - paidAmount;
+        const status = balance <= 0 ? "已结清 / Paid" : paidAmount === 0 ? "未付款 / Unpaid" : "部分付款 / Partial";
+        ref.set({ ...data, paidAmount, balance, status }).then(() => {
+          alert("✅ 总金额已更新 / Total amount updated");
+          renderRecords({ ...data, paidAmount, balance, status });
+        });
+      } else {
+        alert("订单不存在 / Order not found");
+      }
+    });
+  }
+
+  function renderRecords(data) {
+    const container = document.getElementById("records");
+    container.innerHTML = "";
+    const symbol = data.currency === 'USD' ? '$' : '¥';
+    if (!data.payments || data.payments.length === 0) {
+      container.innerHTML = "<i>暂无付款记录 / No payments yet</i>";
+      return;
+    }
+    data.payments.slice().reverse().forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "payment-record";
+      div.innerText = `#${data.payments.length - i} 金额：${symbol}${p.amount} 日期：${p.date} 备注：${p.note || '-'}`;
+      container.appendChild(div);
+    });
+    const percent = Math.min(100, (data.paidAmount / data.totalAmount) * 100);
+    document.getElementById("summaryStatus").innerText = `状态 / Status：${data.status}｜已付 Paid ${symbol}${data.paidAmount}｜尾款 Balance ${symbol}${data.balance}`;
+    document.getElementById("progress").style.width = `${percent}%`;
+  }
+
+  function exportToCSV() {
+    const orderId = document.getElementById("orderId").value.trim();
+    if (!orderId) {
+      alert("请先输入订单号 / Please enter Order ID first");
+      return;
     }
 
-    // 原有 addPayment, updateTotal, renderRecords, exportToCSV, exportAllOrders 函数照旧
-    // 为节省篇幅，这里省略它们内容，如果你需要我也一起补上，我可以一键给你整合发送完整带搜索和写入的版本。
-  </script>
+    db.collection("orders").doc(orderId).get().then(doc => {
+      if (!doc.exists) {
+        alert("订单不存在 / Order not found");
+        return;
+      }
+
+      const data = doc.data();
+      const rows = [
+        ["订单号", data.id],
+        ["客户名称", data.client],
+        ["总金额", data.totalAmount],
+        ["已付", data.paidAmount],
+        ["尾款", data.balance],
+        ["币种", data.currency],
+        [],
+        ["付款记录编号", "金额", "日期", "备注"]
+      ];
+
+      data.payments.forEach((p, index) => {
+        rows.push([index + 1, p.amount, p.date, p.note || ""]);
+      });
+
+      let csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${orderId}_record.csv`;
+      link.click();
+    });
+  }
+
+  function exportAllOrders() {
+    db.collection("orders").get().then(snapshot => {
+      const rows = [
+        ["订单号", "客户", "总金额", "已付", "尾款", "币种", "付款编号", "付款金额", "日期", "备注"]
+      ];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.payments && data.payments.length > 0) {
+          data.payments.forEach((p, index) => {
+            rows.push([
+              data.id,
+              data.client,
+              data.totalAmount,
+              data.paidAmount,
+              data.balance,
+              data.currency,
+              index + 1,
+              p.amount,
+              p.date,
+              p.note || ""
+            ]);
+          });
+        } else {
+          rows.push([
+            data.id,
+            data.client,
+            data.totalAmount,
+            data.paidAmount,
+            data.balance,
+            data.currency,
+            "-", "-", "-", "-"
+          ]);
+        }
+      });
+
+      const csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `所有订单记录_All_Orders.csv`;
+      link.click();
+    });
+  }
+</script>
 </body>
 </html>
 
